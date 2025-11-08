@@ -136,6 +136,13 @@ async def test_selects(
             "smart",
             SetAutoEmpty(None, auto_empty.Frequency.SMART),
         ),
+        (
+            "n0vyif",
+            "select.x8_pro_omni_auto_empty_frequency",
+            "smart",
+            "auto",
+            SetAutoEmpty(1, auto_empty.Frequency.AUTO),
+        ),
     ],
 )
 async def test_selects_change(

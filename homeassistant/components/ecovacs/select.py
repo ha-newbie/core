@@ -126,9 +126,14 @@ class EcovacsSelectEntity[EventT: Event](
 
     async def async_select_option(self, option: str) -> None:
         """Change the selected option."""
-        await self._device.execute_command(
-            self.entity_description.set_option_fn(self._capability, option)
-        )
+        if isinstance(self._capability.types, dict):
+            await self._device.execute_command(
+                self._capability.set(**self._capability.types[option])
+            )
+        else:
+            await self._device.execute_command(
+                self.entity_description.set_option_fn(self._capability, option)
+            )
 
 
 class EcovacsActiveMapSelectEntity(

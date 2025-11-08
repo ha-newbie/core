@@ -133,6 +133,7 @@
         "name": "Auto-empty frequency",
         "state": {
           "auto": "Auto",
+          "manual": "Manual",
           "min_10": "10 minutes",
           "min_15": "15 minutes",
           "min_25": "25 minutes",
