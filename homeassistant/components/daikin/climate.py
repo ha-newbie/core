@@ -243,8 +243,7 @@ class DaikinClimate(DaikinEntity, ClimateEntity):
                     _LOGGER.error("Invalid temperature %s", value)
 
         if values:
-            await self.device.set(values)
-            await self.coordinator.async_refresh()
+            await self.coordinator.async_set(values)
 
     @property
     @override
@@ -378,17 +377,15 @@ class DaikinClimate(DaikinEntity, ClimateEntity):
     @daikin_exception_handler
     async def async_turn_on(self) -> None:
         """Turn device on."""
-        await self.device.set({})
-        await self.coordinator.async_refresh()
+        await self.coordinator.async_set({})
 
     @override
     @daikin_exception_handler
     async def async_turn_off(self) -> None:
         """Turn device off."""
-        await self.device.set(
+        await self.coordinator.async_set(
             {HA_ATTR_TO_DAIKIN[ATTR_HVAC_MODE]: HA_STATE_TO_DAIKIN[HVACMode.OFF]}
         )
-        await self.coordinator.async_refresh()
 
 
 class DaikinZoneClimate(DaikinEntity, ClimateEntity):

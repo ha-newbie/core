@@ -1,6 +1,9 @@
-"""Tests for Daikin climate commands that fail."""
+"""Tests for Daikin climate commands."""
 
 from aiohttp import ServerDisconnectedError
+from pydaikin.daikin_base import Appliance
+from pydaikin.daikin_brp069 import DaikinBRP069
+from pydaikin.daikin_brp084 import DaikinBRP084
 from pydaikin.exceptions import DaikinException
 import pytest
 from pytest_homeassistant.common import MockConfigEntry
@@ -12,7 +15,13 @@ from homeassistant.components.climate import (
 )
 from homeassistant.components.daikin.const import DOMAIN, KEY_MAC
 from homeassistant.components.switch import DOMAIN as SWITCH_DOMAIN
-from homeassistant.const import ATTR_ENTITY_ID, CONF_HOST, SERVICE_TURN_OFF
+from homeassistant.const import (
+    ATTR_ENTITY_ID,
+    CONF_HOST,
+    SERVICE_TURN_OFF,
+    STATE_OFF,
+    STATE_ON,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
@@ -89,3 +98,42 @@ async def test_switch_command_raises_a_clear_error(
         )
 
     assert err.value.translation_key == "error_communicating"
+
+
+@pytest.mark.parametrize(
+    ("device_class", "refresh_count"),
+    [
+        pytest.param(DaikinBRP084, 0, id="brp084"),
+        pytest.param(DaikinBRP069, 1, id="brp069"),
+    ],
+)
+async def test_turn_off_updates_climate_and_switch(
+    hass: HomeAssistant,
+    entity_registry: er.EntityRegistry,
+    zone_device: ZoneDevice,
+    device_class: type[Appliance],
+    refresh_count: int,
+) -> None:
+    """Turning off the unit publishes its state to both entities."""
+    await _async_setup(hass, zone_device)
+    zone_device.mock_add_spec(device_class)
+    climate_id = entity_registry.async_get_entity_id(
+        CLIMATE_DOMAIN, DOMAIN, zone_device.mac
+    )
+    switch_id = entity_registry.async_get_entity_id(
+        SWITCH_DOMAIN, DOMAIN, f"{zone_device.mac}-toggle"
+    )
+    assert climate_id is not None
+    assert switch_id is not None
+    assert hass.states.is_state(climate_id, HVACMode.HEAT)
+    assert hass.states.is_state(switch_id, STATE_ON)
+    zone_device.update_status.reset_mock()
+
+    await hass.services.async_call(
+        CLIMATE_DOMAIN, SERVICE_TURN_OFF, {ATTR_ENTITY_ID: climate_id}, blocking=True
+    )
+
+    zone_device.set.assert_awaited_once_with({"mode": "off"})
+    assert zone_device.update_status.await_count == refresh_count
+    assert hass.states.is_state(climate_id, HVACMode.OFF)
+    assert hass.states.is_state(switch_id, STATE_OFF)

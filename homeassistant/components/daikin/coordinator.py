@@ -5,6 +5,7 @@ import logging
 from typing import override
 
 from pydaikin.daikin_base import Appliance
+from pydaikin.daikin_brp084 import DaikinBRP084
 from pydaikin.exceptions import DaikinException
 
 from homeassistant.config_entries import ConfigEntry
@@ -33,6 +34,15 @@ class DaikinCoordinator(DataUpdateCoordinator[None]):
             update_interval=timedelta(seconds=TIMEOUT_SEC),
         )
         self.device = device
+
+    async def async_set(self, settings: dict[str, str]) -> None:
+        """Apply settings and publish the updated device state."""
+        await self.device.set(settings)
+        if isinstance(self.device, DaikinBRP084):
+            # BRP084 applies acknowledged settings to its local state.
+            self.async_update_listeners()
+        else:
+            await self.async_refresh()
 
     @override
     async def _async_update_data(self) -> None:

@@ -128,12 +128,10 @@ class DaikinToggleSwitch(DaikinEntity, SwitchEntity):
     @daikin_exception_handler
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the zone on."""
-        await self.device.set({})
-        await self.coordinator.async_refresh()
+        await self.coordinator.async_set({})
 
     @override
     @daikin_exception_handler
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the zone off."""
-        await self.device.set({DAIKIN_ATTR_MODE: "off"})
-        await self.coordinator.async_refresh()
+        await self.coordinator.async_set({DAIKIN_ATTR_MODE: "off"})
